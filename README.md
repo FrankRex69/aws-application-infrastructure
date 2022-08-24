@@ -39,3 +39,4 @@ npm run compile
     * #### Global
     * `npm run dev:sv`   deploy (ldsh, luptt, vbox) + create infrastructure Aws for Status Vote section
     * `npm run dev:aggreg`   deploy ah + create infrastructure Aws for Lambda Aggregate with Terraform
+# aws-a-i
