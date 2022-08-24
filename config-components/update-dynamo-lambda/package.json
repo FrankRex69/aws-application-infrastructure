@@ -1,0 +1,21 @@
+{
+  "name": "@ita-voting-discovery/config-components-lambda-update-phase-task-token",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "compile": "tsc --build && cp -r node_modules build/node_modules && cd src && cp -r config ../build/config",
+    "build": "tsc --build && cp -r node_modules build/node_modules && cd src && cp -r config ../build/config",
+    "test": "export NODE_CONFIG_DIR=./src/config && ../../node_modules/mocha/bin/mocha --timeout 5000 -r ts-node/register 'test/**/*.test.ts'",
+    "coverage": "nyc npm run test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "3.118.1",
+    "@aws-sdk/util-dynamodb": "3.118.1",
+    "@sinclair/typebox": "0.23.4",
+    "config": "3.3.7",
+    "joi": "17.6.0"
+  }
+}

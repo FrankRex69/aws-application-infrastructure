@@ -1,0 +1,78 @@
+{
+    "name": "ita-voting-discovery",
+    "version": "0.1.0",
+    "description": "",
+    "scripts": {
+     "test": "cross-env NODE_ENV=development npx lerna run test",
+     "setup": "npx lerna clean --yes && npx lerna bootstrap",
+     "compile": "npx lerna run compile",
+     "coverage": "nyc npm run test",
+     "lstus": "cd config-components && cd lambda-send-table-update-sns && tsc --build && cp -r node_modules build/node_modules && cd src && cp -r config ../build/config",
+     "lgdbp": "cd config-components && cd lambda-group-data-by-property && tsc --build && cp -r node_modules build/node_modules",
+     "lapd": "cd config-components && cd lambda-aggregate-poll-details && tsc --build",
+     "lrpcp": "cd config-components && cd lambda-reopen-poll-check-prerequisites && tsc --build",
+     "lmpc": "cd config-components && cd lambda-merge-poll-channels && tsc --build",
+     "lcuc": "cd config-components && cd lambda-create-updated-participants && tsc --build",
+     "lcim": "cd config-components && cd lambda-channel-inverse-multiplexer && tsc --build",
+     "lcm": "cd config-components && cd lambda-channel-multiplexer && tsc --build && cp -r node_modules build/node_modules",
+     "dev:ldsh": "cd config-components/lambda-dynamo-stream-handler && rm -r build && tsc --build && cp -r node_modules build/node_modules && cd src && cp -r config ../build/config",
+     "dev:luptt": "cd config-components/lambda-update-phase-task-token && rm -r build && tsc --build && cp -r node_modules build/node_modules && cd src && cp -r config ../build/config",
+     "dev:vbox": "cd config-components/status-voting-box-handler && rm -r build && tsc --build && cp -r node_modules build/node_modules && cd src && cp -r config ../build/config",
+     "dev:ah": "cd config-components/aggregator-handler && rm -r build && tsc --build && cp -r node_modules build/node_modules && cd src && cp -r config ../build/config",
+     "dev:testEmail": "cd config-components/test-send-email-handler && tsc --build",
+     "dev:terraform-testEmail": "cd infrastructure/terraform && terraform init && terraform apply --var-file=variablesDev.tfvars -target=module.test-send-email-handler -auto-approve",
+     "dev:terraform-sv": "cd infrastructure/terraform && terraform init && terraform apply --var-file=variablesDev.tfvars -target=module.stepfunction -target=module.lambda-dynamo-stream-handler -target=module.lambda-update-phase-task-token -target=module.status-voting-box-handler -auto-approve",
+     "test:terraform-sv": "cd infrastructure/terraform && terraform init && terraform apply --var-file=variablesTest.tfvars -target=module.stepfunction -target=module.lambda-dynamo-stream-handler -target=module.lambda-update-phase-task-token -target=module.status-voting-box-handler -auto-approve",
+     "dev:terraform-aggreg": "cd infrastructure/terraform && terraform init && terraform apply --var-file=variablesDev.tfvars -target=module.aggregator-handler -auto-approve",
+     "dev:terraform-opensearch": "cd infrastructure/terraform && terraform init && terraform apply --var-file=variablesDev.tfvars -target=module.opensearch -auto-approve",
+     "dev:tE": "npm run dev:testEmail && npm run dev:terraform-testEmail",
+     "dev:aggreg": "npm run dev:ah && npm run dev:terraform-aggreg",
+     "dev:sv": "npm run dev:ldsh && npm run dev:luptt && npm run dev:vbox && npm run dev:terraform-sv",
+     "test:sv": "npm run dev:ldsh && npm run dev:luptt && npm run dev:vbox && npm run test:terraform-sv"
+    },
+    "devDependencies": {
+     "aws-sdk": "2.1055.0",
+     "@aws-sdk/client-sns": "3.118.1",
+     "@aws-sdk/client-sqs": "3.118.1",
+     "@fastify/sensible": "4.1.0",
+     "@types/aws-lambda": "8.10.101",
+     "@types/chai": "4.3.0",
+     "@types/chai-as-promised": "7.1.5",
+     "@types/config": "0.0.41",
+     "@types/jsonwebtoken": "8.5.8",
+     "@types/mocha": "9.1.0",
+     "@types/node": "17.0.23",
+     "@types/request": "2.48.8",
+     "@types/sinon": "10.0.11",
+     "@types/uuid": "8.3.4",
+     "@types/cookie": "0.5.1",
+     "@types/sinon-chai": "3.2.8",
+     "@types/jwk-to-pem": "2.0.1",
+     "aws-sdk-client-mock": "0.6.2",
+     "chai": "4.3.6",
+     "chai-as-promised": "7.1.1",
+     "cross-env": "7.0.3",
+     "lerna": "5.1.6",
+     "mocha": "9.2.2",
+     "npm": "8.6.0",
+     "nyc": "15.1.0",
+     "sinon": "13.0.1",
+     "sinon-chai": "3.7.0",
+     "ts-node": "10.7.0",
+     "typescript": "4.6.3"
+    },
+    "nyc": {
+     "include": [
+      "sync-components/**/src/**/*",
+      "config-components/**/src/**/*"
+     ],
+     "extension": [
+      ".ts"
+     ],
+     "reporter": [
+      "html",
+      "lcov"
+     ],
+     "all": true
+    }
+   }

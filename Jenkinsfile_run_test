@@ -1,0 +1,155 @@
+#!/usr/bin/env groovy
+/* groovylint-disable CompileStatic, DuplicateStringLiteral, LineLength, NestedBlockDepth, NglParseError, NoDef, NoWildcardImports, UnnecessaryGString, VariableTypeRequired */
+@Library(value='jenkins-ci-library', changelog=false)
+import it.sky.dp.jenkins.slack.*
+import it.sky.dp.jenkins.env.*
+import it.sky.dp.jenkins.jenkinsauthorizer.*
+
+// To create dynamics envs
+import groovy.json.JsonSlurperClassic
+
+def slackInfo
+def slackNotifier
+def startMessage
+
+String slackMessage
+String projectPrefix = 'su-me'
+String dockerImage = "postman/newman"
+def dockerCredentials = [
+	[
+		$class: "UsernamePasswordMultiBinding",
+		credentialsId: "docker",
+		usernameVariable: "DOCKER_USERNAME",
+		passwordVariable: "DOCKER_PWD"
+	]
+];
+
+
+pipeline {
+    environment {
+        SLACK_URL = 'https://sky.slack.com/services/hooks/jenkins-ci/'
+        SLACK_TOKEN_CREDENTIAL_ID = 'votingplatform-slack-integration'
+        SLACK_CHANNEL = 'su-votingplatform-rilascio'
+        DOCKER_RUN_PARAMS = "-u jenkins -v /home/jenkins/:/home/jenkins/"
+        NEWMAN_RUN_PARAMS="-r cli,junit --reporter-junit-export './result.xml' -n 2 --delay-request 40 -x -g ./postman/vtp_dev.postman_globals.json"
+        DEFAULT_REGION = 'eu-west-1'
+        TARGET_ENV = "dev"
+        API_ID= "75svf7sbarbctbyhvcp2mlaqaq"
+    }
+
+    parameters {        
+        choice(name: 'TARGET_ENV', choices: ['dev', 'test', 'stage', 'prod'])
+        string(name: 'RELEASE_BRANCH', defaultValue: 'main')
+    }
+    agent { label "sky-votingformat-${TARGET_ENV}" }
+    stages {
+        stage('Setup') {
+            steps {
+                script {
+                    slackInfo = new SlackInfo("${SLACK_URL}", "${SLACK_TOKEN_CREDENTIAL_ID}", "${SLACK_CHANNEL}")
+                    slackNotifier = new SlackNotifier(this, env, currentBuild, slackInfo)
+                    startMessage = 'Starting monitoring pipeline'
+                    slackNotifier.notifyBuildStarted(startMessage)
+                
+                    withCredentials(dockerCredentials) {
+                        sh("docker login --username ${DOCKER_USERNAME} --password ${DOCKER_PWD}")
+                        sh("docker pull ${dockerImage}")
+                    }
+                }
+            }
+        }
+
+        // Checkout to the correct branch
+        stage('Checkout to release branch') {
+            steps {
+                script {
+                    sh('git checkout $RELEASE_BRANCH')
+                }
+            }
+        }
+
+        stage('Get/Generate Api Key'){
+            steps{
+                script {
+                    def unixTs = sh(
+                        script: 'date +%s',
+                        returnStdout: true
+                        ).trim()
+                    API_KEY = sh(
+                        script: """aws appsync list-api-keys --api-id ${API_ID} --region eu-west-1| \
+                        jq '(.apiKeys[] | select (.expires > ${unixTs} )).id' | \
+                        head -n1""",
+                        returnStdout: true
+                    ).trim()
+                    if (API_KEY.isEmpty()) {
+                        API_KEY = sh(
+                            script: """aws appsync create-api-key --api-id ${API_ID} --region eu-west-1 | \
+                            jq '.apiKeys.id' """,
+                            returnStdout: true
+                        ).trim()
+                    }
+                }
+            }
+        }
+
+        stage('Run Config Component test') {
+            steps {
+                script {
+                    docker.image(dockerImage).inside("--entrypoint=''") {
+                        sh("""
+                        newman run ./postman/01_config_components.postman_collection.json \
+                        -e ./postman/01_config_components_${TARGET_ENV}.postman_environment.json \
+                        --global-var "back_office_app_sync_api_key=${API_KEY}" \
+                        ${NEWMAN_RUN_PARAMS}""")
+                    }    
+                }
+            }
+        }
+
+        stage('Recording Config test results') {
+            steps {
+                withChecks('Config Tests') {
+                    junit testResults: 'result.xml'
+                }
+            }
+        }
+
+        stage('Run Async Component test') {
+            steps {
+                script {
+                    docker.image(dockerImage).inside("--entrypoint=''") {
+                        sh("""
+                        newman run ./postman/02_async_components.postman_collection.json \
+                        -e ./postman/02_async_components_${TARGET_ENV}.postman_environment.json \
+                        --global-var "back_office_app_sync_api_key=${API_KEY}" \
+                        ${NEWMAN_RUN_PARAMS}""")
+                    }    
+                }
+            }
+        }
+
+        stage('Recording Async test results') {
+            steps {
+                withChecks('Async Tests') {
+                    junit testResults: 'result.xml'
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                slackNotifier.notifyBuildFailed(slackMessage)
+            }
+        }
+        success {
+            script {
+                slackNotifier.notifyBuildSuccess(slackMessage)
+            }
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

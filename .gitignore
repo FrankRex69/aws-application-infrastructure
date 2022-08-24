@@ -1,0 +1,30 @@
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+
+# Mac Files
+.DS_STORE
+.DS_Store
+
+# .env files
+.env
+
+# docker-compose data
+.data
+
+# Log files
+*.log
+
+# Coverage
+coverage
+.nyc_output
+
+# Terraform
+.terraform*
+build
+.output
+.terraform.tfstate
+terraform.tfvars*
+/infrastructure/terraform/output/
+/infrastructure/terraform/modules/cognito/AuthKey_DUQRN3HB5S.p8

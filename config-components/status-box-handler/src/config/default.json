@@ -1,0 +1,7 @@
+{
+  "CAMEL_ENDPOINT": "camel_endpoint",
+  "DRY_RUN_INVOKE_CAMEL": "dry_run_invoke_camel",
+  "EMAIL_SOURCE_VOTINGXML": "EMAIL_SOURCE_VOTINGXML",
+  "EMAIL_DESTINATION_VOTINGXML": "EMAIL_DESTINATION_VOTINGXML",
+  "region": "region"
+}
